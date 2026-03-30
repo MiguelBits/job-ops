@@ -36,7 +36,7 @@ Open:
 The onboarding wizard helps you validate and save:
 
 1. **LLM Provider**: OpenRouter by default (or OpenAI/Gemini/local URL).
-2. **PDF Export**: RxResume credentials for PDF generation.
+2. **PDF Export**: RxResume credentials, plus your preferred PDF renderer in Settings.
 3. **Template Resume**: Choose a base resume from your RxResume account.
 
 Settings are saved to the local database.
@@ -128,3 +128,17 @@ If you self-host Reactive Resume, set:
 - `RXRESUME_API_KEY=...` (or configure `rxresumeApiKey` in JobOps Settings)
 
 `auto` mode is the default and prefers v5 when an API key is configured, then falls back to v4 credentials.
+
+## Local LaTeX PDF rendering
+
+JobOps supports 2 PDF renderers:
+
+- `rxresume`: export the final PDF through RxResume
+- `latex`: render locally from tailored resume data using LaTeX and `tectonic`
+
+When using the LaTeX renderer:
+
+- The Docker image installs `tectonic` for you.
+- For non-Docker local runs, install `tectonic` yourself and optionally set `TECTONIC_BIN` if it is not on your `PATH`.
+
+RxResume remains the source of truth for base resume data, project visibility, and tailoring inputs in both modes.

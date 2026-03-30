@@ -82,6 +82,7 @@ PDF generation uses:
 - base resume selected from RxResume
 - job description
 - tailored summary/headline/skills/projects
+- the configured PDF renderer (`rxresume` export or local LaTeX via `tectonic`)
 
 Common paths:
 
