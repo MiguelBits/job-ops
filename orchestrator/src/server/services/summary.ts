@@ -17,7 +17,9 @@ import {
 } from "./prompt-templates";
 import {
   getWritingStyle,
+  stripKeywordLimitFromConstraints,
   stripLanguageDirectivesFromConstraints,
+  stripWordLimitFromConstraints,
 } from "./writing-style";
 
 export interface TailoredData {
@@ -152,9 +154,16 @@ async function buildTailoringPrompt(
     profile,
   });
   const outputLanguage = getWritingLanguageLabel(resolvedLanguage.language);
-  const effectiveConstraints = stripLanguageDirectivesFromConstraints(
+  let effectiveConstraints = stripLanguageDirectivesFromConstraints(
     writingStyle.constraints,
   );
+  if (writingStyle.summaryMaxWords != null) {
+    effectiveConstraints = stripWordLimitFromConstraints(effectiveConstraints);
+  }
+  if (writingStyle.maxKeywordsPerSkill != null) {
+    effectiveConstraints =
+      stripKeywordLimitFromConstraints(effectiveConstraints);
+  }
 
   // Extract only needed parts of profile to save tokens
   const relevantProfile = {
@@ -184,6 +193,14 @@ async function buildTailoringPrompt(
     outputLanguage,
     tone: writingStyle.tone,
     formality: writingStyle.formality,
+    summaryMaxWordsLine:
+      writingStyle.summaryMaxWords != null
+        ? ` Maximum ${writingStyle.summaryMaxWords} ${writingStyle.summaryMaxWords === 1 ? "word" : "words"}.`
+        : "",
+    maxKeywordsPerSkillLine:
+      writingStyle.maxKeywordsPerSkill != null
+        ? `\n   - Maximum ${writingStyle.maxKeywordsPerSkill} ${writingStyle.maxKeywordsPerSkill === 1 ? "keyword" : "keywords"} per category. If a category has more, keep only the most JD-relevant ones.`
+        : "",
     constraintsBullet: effectiveConstraints
       ? `- Additional constraints: ${effectiveConstraints}`
       : "",

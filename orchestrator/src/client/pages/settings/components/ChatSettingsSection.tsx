@@ -16,6 +16,7 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -66,9 +67,16 @@ export const ChatSettingsSection: React.FC<ChatSettingsSectionProps> = ({
     doNotUse,
     languageMode,
     manualLanguage,
+    summaryMaxWords,
+    maxKeywordsPerSkill,
   } = values;
 
-  const { control, register, setValue } = useFormContext<UpdateSettingsInput>();
+  const {
+    control,
+    register,
+    setValue,
+    formState: { errors },
+  } = useFormContext<UpdateSettingsInput>();
   const [doNotUseDraft, setDoNotUseDraft] = useState("");
   const [
     toneValue,
@@ -393,6 +401,112 @@ export const ChatSettingsSection: React.FC<ChatSettingsSectionProps> = ({
               {CHAT_STYLE_MANUAL_LANGUAGE_LABELS[manualLanguage.effective]} |
               Default:{" "}
               {CHAT_STYLE_MANUAL_LANGUAGE_LABELS[manualLanguage.default]}
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label
+              htmlFor="chatStyleSummaryMaxWords"
+              className="text-sm font-medium"
+            >
+              Summary max words
+            </label>
+            <Controller
+              name="chatStyleSummaryMaxWords"
+              control={control}
+              rules={{
+                validate: (v) =>
+                  v === null ||
+                  v === undefined ||
+                  (Number.isInteger(v) && v >= 1 && v <= 500) ||
+                  "Must be between 1 and 500",
+              }}
+              render={({ field }) => (
+                <Input
+                  id="chatStyleSummaryMaxWords"
+                  type="number"
+                  min={1}
+                  max={500}
+                  step={1}
+                  placeholder="No limit"
+                  disabled={isLoading || isSaving}
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.valueAsNumber;
+                    field.onChange(Number.isFinite(value) ? value : null);
+                  }}
+                />
+              )}
+            />
+            {errors.chatStyleSummaryMaxWords && (
+              <div className="text-xs text-destructive">
+                {errors.chatStyleSummaryMaxWords.message as string}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Limits words in the AI-generated summary. Overrides any word
+              limits in Constraints.
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Current:{" "}
+              <span className="font-mono">
+                {summaryMaxWords.effective ?? "—"}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="chatStyleMaxKeywordsPerSkill"
+              className="text-sm font-medium"
+            >
+              Max keywords per skill
+            </label>
+            <Controller
+              name="chatStyleMaxKeywordsPerSkill"
+              control={control}
+              rules={{
+                validate: (v) =>
+                  v === null ||
+                  v === undefined ||
+                  (Number.isInteger(v) && v >= 1 && v <= 50) ||
+                  "Must be between 1 and 50",
+              }}
+              render={({ field }) => (
+                <Input
+                  id="chatStyleMaxKeywordsPerSkill"
+                  type="number"
+                  min={1}
+                  max={50}
+                  step={1}
+                  placeholder="No limit"
+                  disabled={isLoading || isSaving}
+                  value={field.value ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.valueAsNumber;
+                    field.onChange(Number.isFinite(value) ? value : null);
+                  }}
+                />
+              )}
+            />
+            {errors.chatStyleMaxKeywordsPerSkill && (
+              <div className="text-xs text-destructive">
+                {errors.chatStyleMaxKeywordsPerSkill.message as string}
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Caps keywords per skill category. Overrides any keyword limits in
+              Constraints.
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Current:{" "}
+              <span className="font-mono">
+                {maxKeywordsPerSkill.effective ?? "—"}
+              </span>
             </div>
           </div>
         </div>

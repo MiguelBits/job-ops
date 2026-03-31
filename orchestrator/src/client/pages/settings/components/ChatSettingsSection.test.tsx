@@ -1,5 +1,5 @@
 import type { UpdateSettingsInput } from "@shared/settings-schema.js";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
@@ -67,8 +67,13 @@ vi.mock("@/components/ui/select", () => {
   };
 });
 
-const ChatSettingsHarness = () => {
+const ChatSettingsHarness = ({
+  mode = "onSubmit" as const,
+}: {
+  mode?: "onSubmit" | "onChange";
+} = {}) => {
   const methods = useForm<UpdateSettingsInput>({
+    mode,
     defaultValues: {
       chatStyleTone: "",
       chatStyleFormality: "",
@@ -76,6 +81,8 @@ const ChatSettingsHarness = () => {
       chatStyleDoNotUse: "",
       chatStyleLanguageMode: null,
       chatStyleManualLanguage: null,
+      chatStyleSummaryMaxWords: null,
+      chatStyleMaxKeywordsPerSkill: null,
     },
   });
 
@@ -90,6 +97,8 @@ const ChatSettingsHarness = () => {
             doNotUse: { effective: "", default: "" },
             languageMode: { effective: "manual", default: "manual" },
             manualLanguage: { effective: "english", default: "english" },
+            summaryMaxWords: { effective: null, default: null },
+            maxKeywordsPerSkill: { effective: null, default: null },
           }}
           isLoading={false}
           isSaving={false}
@@ -136,5 +145,46 @@ describe("ChatSettingsSection", () => {
       screen.queryByRole("combobox", { name: /specific language/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("english")).not.toBeInTheDocument();
+  });
+
+  it("shows validation error when summary word limit is out of range", async () => {
+    const { container } = render(<ChatSettingsHarness mode="onChange" />);
+
+    const input = container.querySelector(
+      "#chatStyleSummaryMaxWords",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "999", valueAsNumber: 999 } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Must be between 1 and 500")).toBeInTheDocument();
+    });
+  });
+
+  it("shows validation error when max keywords per skill is out of range", async () => {
+    const { container } = render(<ChatSettingsHarness mode="onChange" />);
+
+    const input = container.querySelector(
+      "#chatStyleMaxKeywordsPerSkill",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "0", valueAsNumber: 0 } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Must be between 1 and 50")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show validation error for valid summary word limit", async () => {
+    const { container } = render(<ChatSettingsHarness mode="onChange" />);
+
+    const input = container.querySelector(
+      "#chatStyleSummaryMaxWords",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "50", valueAsNumber: 50 } });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Must be between 1 and 500"),
+      ).not.toBeInTheDocument();
+    });
   });
 });
