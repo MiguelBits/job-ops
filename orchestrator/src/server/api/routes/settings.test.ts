@@ -101,6 +101,7 @@ describe.sequential("Settings API routes", () => {
     expect(body.data.pdfRenderer.value).toBe("rxresume");
     expect(body.data.pdfRenderer.default).toBe("rxresume");
     expect(body.data.llmApiKeyHint).toBe("secr");
+    expect(body.data.basicAuthPassword).toBeNull();
     expect(body.data.basicAuthActive).toBe(false);
     expect(body.data.ghostwriterSystemPromptTemplate.value).toBe(
       getDefaultPromptTemplate("ghostwriterSystemPromptTemplate"),
@@ -111,6 +112,29 @@ describe.sequential("Settings API routes", () => {
     expect(body.data.scoringPromptTemplate.value).toBe(
       getDefaultPromptTemplate("scoringPromptTemplate"),
     );
+  });
+
+  it("does not expose the basic auth password when only the password is configured", async () => {
+    const partialBasicAuth = await startServer({
+      env: {
+        BASIC_AUTH_PASSWORD: "secret-only",
+        BASIC_AUTH_USER: "",
+        LLM_API_KEY: "secret-key",
+        RXRESUME_EMAIL: "resume@example.com",
+      },
+    });
+
+    try {
+      const res = await fetch(`${partialBasicAuth.baseUrl}/api/settings`);
+      const body = await res.json();
+
+      expect(body.ok).toBe(true);
+      expect(body.data.basicAuthActive).toBe(false);
+      expect(body.data.basicAuthPassword).toBeNull();
+      expect(body.data.basicAuthPasswordHint).toBe("secr");
+    } finally {
+      await stopServer(partialBasicAuth);
+    }
   });
 
   it("normalizes hyphenated openai-compatible env defaults", async () => {
@@ -233,6 +257,8 @@ describe.sequential("Settings API routes", () => {
         rxresumeEmail: "updated@example.com",
         rxresumeUrl: "https://resume.example.com",
         llmApiKey: "updated-secret",
+        basicAuthUser: "admin",
+        basicAuthPassword: "letmein",
         ghostwriterSystemPromptTemplate: "Custom Ghostwriter {{tone}}",
       }),
     });
@@ -245,6 +271,8 @@ describe.sequential("Settings API routes", () => {
     expect(patchBody.data.rxresumeEmail).toBe("updated@example.com");
     expect(patchBody.data.rxresumeUrl).toBe("https://resume.example.com");
     expect(patchBody.data.llmApiKeyHint).toBe("upda");
+    expect(patchBody.data.basicAuthUser).toBe("admin");
+    expect(patchBody.data.basicAuthPassword).toBe("letmein");
     expect(patchBody.data.ghostwriterSystemPromptTemplate.override).toBe(
       "Custom Ghostwriter {{tone}}",
     );
