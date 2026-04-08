@@ -13,6 +13,7 @@ import { settingsRegistry } from "@shared/settings-registry";
 import type { DesignResumePdfResponse, PdfRenderer } from "@shared/types";
 import { getDataDir } from "../config/dataDir";
 import { getCurrentDesignResume } from "./design-resume";
+import { convertDesignResumeToReactiveResumeV5Document } from "./design-resume/reactive-resume-export";
 import { renderResumePdf } from "./resume-renderer";
 import {
   deleteResume as deleteRxResume,
@@ -87,15 +88,22 @@ async function renderRxResumePdf(args: {
   outputPath: string;
   jobId: string;
   name?: string;
+  requestOrigin?: string | null;
 }): Promise<void> {
   const { preparedResume, outputPath, jobId } = args;
   let importedResumeId: string | null = null;
+  const importData =
+    preparedResume.mode === "v5"
+      ? convertDesignResumeToReactiveResumeV5Document(preparedResume.data, {
+          requestOrigin: args.requestOrigin ?? null,
+        })
+      : preparedResume.data;
 
   try {
     importedResumeId = await importRxResume(
       {
         name: args.name?.trim() || `JobOps Tailored Resume ${jobId}`,
-        data: preparedResume.data,
+        data: importData,
       },
       { mode: preparedResume.mode },
     );
@@ -216,6 +224,7 @@ export async function generatePdf(
         preparedResume,
         outputPath,
         jobId,
+        requestOrigin: options?.requestOrigin ?? null,
       });
     }
 
@@ -228,7 +237,9 @@ export async function generatePdf(
   }
 }
 
-export async function generateDesignResumePdf(): Promise<DesignResumePdfResponse> {
+export async function generateDesignResumePdf(options?: {
+  requestOrigin?: string | null;
+}): Promise<DesignResumePdfResponse> {
   const designResume = await getCurrentDesignResume();
   if (!designResume?.resumeJson) {
     throw notFound("Design Resume has not been imported yet.");
@@ -266,6 +277,7 @@ export async function generateDesignResumePdf(): Promise<DesignResumePdfResponse
       outputPath,
       jobId: "design-resume",
       name: designResume.title,
+      requestOrigin: options?.requestOrigin ?? null,
     });
   }
 

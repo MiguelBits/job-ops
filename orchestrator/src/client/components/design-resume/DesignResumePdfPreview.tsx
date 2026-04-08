@@ -1,10 +1,12 @@
 import * as api from "@client/api";
-import type { DesignResumeDocument } from "@shared/types";
+import type { DesignResumeDocument, PdfRenderer } from "@shared/types";
 import { FileText, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type DesignResumePdfPreviewProps = {
   draft: DesignResumeDocument;
+  pdfRenderer: PdfRenderer;
+  isUpdatingRenderer: boolean;
   isDirty: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
 };
@@ -13,6 +15,8 @@ type PreviewState = "idle" | "waiting-for-save" | "loading" | "ready" | "error";
 
 export function DesignResumePdfPreview({
   draft,
+  pdfRenderer,
+  isUpdatingRenderer,
   isDirty,
   saveState,
 }: DesignResumePdfPreviewProps) {
@@ -24,8 +28,8 @@ export function DesignResumePdfPreview({
   const lastLoadedKey = useRef<string | null>(null);
 
   const revisionKey = useMemo(
-    () => `${draft.id}:${draft.revision}`,
-    [draft.id, draft.revision],
+    () => `${draft.id}:${draft.revision}:${pdfRenderer}`,
+    [draft.id, draft.revision, pdfRenderer],
   );
 
   useEffect(() => {
@@ -34,7 +38,7 @@ export function DesignResumePdfPreview({
       return;
     }
 
-    if (isDirty || saveState === "saving") {
+    if (isUpdatingRenderer || isDirty || saveState === "saving") {
       setPreviewState("waiting-for-save");
       setIsFrameLoading(false);
       return;
@@ -68,7 +72,7 @@ export function DesignResumePdfPreview({
         setPreviewState("error");
         setIsFrameLoading(false);
       });
-  }, [isDirty, revisionKey, saveState]);
+  }, [isDirty, isUpdatingRenderer, revisionKey, saveState]);
 
   const showLoader =
     previewState === "loading" ||
@@ -96,9 +100,11 @@ export function DesignResumePdfPreview({
             <div className="flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-border/70 bg-background/95 px-6 py-5 text-center shadow-lg">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <div className="text-sm font-medium text-foreground">
-                {previewState === "waiting-for-save"
-                  ? "Saving changes before updating the preview"
-                  : "Rendering PDF preview"}
+                {isUpdatingRenderer
+                  ? "Updating template before refreshing the preview"
+                  : previewState === "waiting-for-save"
+                    ? "Saving changes before updating the preview"
+                    : "Rendering PDF preview"}
               </div>
             </div>
           </div>
